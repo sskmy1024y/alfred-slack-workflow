@@ -15,6 +15,7 @@ func openChannel() {
 
 		for _, channel := range c_channels {
 			wf.NewItem(channel.Name).
+				UID(channel.ID).
 				Var("teamID", channel.TeamID).
 				Var("channelID", channel.ID).
 				Valid(true)
