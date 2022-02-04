@@ -12,11 +12,10 @@ func updateChannels() {
 	cfg := aw.NewConfig()
 	token := cfg.Get("SLACK_TOKEN")
 	api := slack.New(token)
-	params := slack.GetConversationsParameters{}
-	channels, _, err_channels := api.GetConversations(&params)
-	team, err_team := api.GetTeamInfo()
 
-	if err_channels != nil || err_team != nil {
+	channels, err := getConversations(api, []slack.Channel{}, "")
+	team, err_team := api.GetTeamInfo()
+	if err != nil || err_team != nil {
 		wf.Warn("Error", "Error occurred in Slack API ")
 	}
 
@@ -31,4 +30,24 @@ func updateChannels() {
 
 	c.StoreJSON(cache_file, all_channels)
 	wf.SendFeedback()
+}
+
+func getConversations(api *slack.Client, channels []slack.Channel, cursor string) ([]slack.Channel, error) {
+	params := slack.GetConversationsParameters{
+		Limit: 200,
+		ExcludeArchived: "true",
+		Cursor: cursor,
+	}
+	next_channels, next_cursor, err_channels := api.GetConversations(&params)
+	if err_channels != nil {
+		return nil, err_channels
+	}
+
+	channels = append(channels, next_channels...)
+
+	if next_cursor == "" {
+		return channels, nil
+	}
+	
+	return getConversations(api, channels, next_cursor)
 }
